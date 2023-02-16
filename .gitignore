@@ -1,6 +1,6 @@
 *.code-workspace
 **/__pycache__/*
-*use-case/*
-*data/*
-*logs/*
-*output/*
+data/*
+logs/*
+output/*
+*.odt
