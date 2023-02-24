@@ -32,7 +32,7 @@ dependencies:
   - fontconfig=2.14.1=h52c9d5c_1
   - fonttools=4.25.0=pyhd3eb1b0_0
   - freetype=2.12.1=h4a9f257_0
-  - giflib=5.2.1=h5eee18b_1
+  - giflib=5.2.1=h5eee18b_3
   - glib=2.69.1=he621ea3_2
   - gst-plugins-base=1.14.0=h8213a91_2
   - gstreamer=1.14.0=h28cd5cc_2
@@ -68,8 +68,8 @@ dependencies:
   - libstdcxx-ng=11.2.0=h1234567_1
   - libtiff=4.5.0=h6a678d5_1
   - libuuid=1.41.5=h5eee18b_0
-  - libwebp=1.2.4=h11a3e52_0
-  - libwebp-base=1.2.4=h5eee18b_0
+  - libwebp=1.2.4=h11a3e52_1
+  - libwebp-base=1.2.4=h5eee18b_1
   - libxcb=1.15=h7f8727e_0
   - libxkbcommon=1.0.1=hfa300c1_0
   - libxml2=2.9.14=h74e7548_0
@@ -127,6 +127,7 @@ dependencies:
   - requests=2.28.1=py39h06a4308_0
   - ruamel.yaml=0.17.21=py39h5eee18b_0
   - ruamel.yaml.clib=0.2.6=py39h5eee18b_1
+  - seaborn=0.12.2=py39h06a4308_0
   - setuptools=65.6.3=py39h06a4308_0
   - sip=6.6.2=py39h6a678d5_0
   - six=1.16.0=pyhd3eb1b0_1
@@ -142,7 +143,7 @@ dependencies:
   - tzdata=2022g=h04d1e81_0
   - urllib3=1.26.14=py39h06a4308_0
   - wcwidth=0.2.5=pyhd3eb1b0_0
-  - wheel=0.37.1=pyhd3eb1b0_0
+  - wheel=0.38.4=py39h06a4308_0
   - xyzservices=2022.9.0=py39h06a4308_1
   - xz=5.2.10=h5eee18b_1
   - yaml=0.2.5=h7b6447c_0
