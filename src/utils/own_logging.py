@@ -37,9 +37,9 @@ class OwnLogging():
                     # Default Level 
                     level=logging.INFO,
                     # Write the logs into file 
-                    filename=os.path.join("4_logs","main.log"),filemode="w",
+                    filename=os.path.join("logs","main.log"),filemode="w",
                     # Formatting the logs
-                    format="%(asctime)s,%(msecs)d %(levelname)-8s [%(name)s:%(filename)s(%(lineno)d)] %(message)s")
+                    format="\t%(asctime)s,%(msecs)d %(levelname)-8s [%(name)s:%(filename)s-%(funcName)s(%(lineno)d)] \n%(message)s")
 
         self.__logger.debug("Logger initialization for package/module <%s>", package_name)
 

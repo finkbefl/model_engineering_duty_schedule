@@ -57,6 +57,8 @@ class PlotMultipleLayers(PlotBokeh):
             The label of the x axis
         y_label : str
             The label of the y axis
+        x_axis_type : str
+            The type of the x-axis
         file_name : str
             The file name (html) in which the figure is shown
         file_title : str
@@ -80,7 +82,7 @@ class PlotMultipleLayers(PlotBokeh):
     __own_logger = __own_logging.logger
 
     # Constructor Method
-    def __init__(self, figure_title, x_label, y_label, file_name=None, file_title=None):
+    def __init__(self, figure_title, x_label, y_label, x_axis_type='auto', file_name=None, file_title=None):
         # Call the Base Class Constructor
         PlotBokeh.__init__(self, file_name, file_title)
         # For color cycling (different colors for the different layers)
@@ -89,7 +91,7 @@ class PlotMultipleLayers(PlotBokeh):
         checkParameterString(figure_title)
         checkParameterString(x_label)
         checkParameterString(y_label)
-        self.__own_figure = figure(title=figure_title, x_axis_label=x_label, y_axis_label=y_label)
+        self.__own_figure = figure(title=figure_title, x_axis_type=x_axis_type, x_axis_label=x_label, y_axis_label=y_label)
         self.__own_logger.info("Bokeh plot for multiple layers initialized for figure %s", figure_title)
 
     def addCircleLayer(self, legend_label, x_data, y_data):
