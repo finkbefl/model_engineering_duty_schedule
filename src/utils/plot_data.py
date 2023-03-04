@@ -3,7 +3,7 @@
 # Import the external packages
 from bokeh.plotting import figure, show
 from bokeh.io import output_file
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, column
 from bokeh.palettes import Category10_10
 from pandas.core.series import Series
 from bokeh.plotting.figure import Figure
@@ -258,17 +258,36 @@ class PlotMultipleFigures(PlotBokeh):
         self.__figure_list.append(figure)
         self.__own_logger.info("Appendend figure to Bokeh plot %s", figure)
 
-    def showPlot(self):
+    def showPlot(self, ncols=2, plot_width=None, plot_height=None):
         """
-        Show the plot
+        Show the plot in gridplot layout (not responsive, fixed sizes in pixel)
         ----------
         Parameters:
-            no parameter
+            ncols : int
+                The number of columns (default: 2)
+            plot_width : int
+                The plot width (default: None)
+            plot_height : int
+                The plot height (default: None)
         ----------
         Returns:
             Show the plot
         """
-        # Add the figures out of the list to the gridplot (with 2 colums) and show it
-        self.__own_logger.info("Show the gridplot")
-        plot = gridplot(self.__figure_list, ncols=2)
+        self.__own_logger.info("Show the gridplot layout")
+        plot = gridplot(self.__figure_list, ncols=ncols, plot_width=plot_width, plot_height=plot_height)
+        show(plot)
+
+    def showPlotResponsive(self, sizing_mode='stretch_both'):
+        """
+        Show the plot in column layout (responsive)
+        ----------
+        Parameters:
+            sizing_mode : Str
+                The sizing mode (default: stretch both -> completely responsive)
+        ----------
+        Returns:
+            Show the plot
+        """
+        self.__own_logger.info("Show the column layout")
+        plot = column(self.__figure_list, sizing_mode=sizing_mode)
         show(plot)
