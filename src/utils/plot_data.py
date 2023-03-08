@@ -171,19 +171,21 @@ class PlotMultipleLayers(PlotBokeh):
         else:
             raise IllegalArgumentError("A range must be a value pair!")
 
-    def add_green_box(self, top_val):
+    def add_green_box(self, top_val, bottom_val=0):
         """
         Add a green box from y=0 up to the specified y value
         ----------
         Parameters:
             top_val : numbers.Real
                 The upper y value as limit for the color box
+            bottom_val : numbers.Real
+                The lower y value as limit for the color box
         ----------
         Returns:
             no returns
         """
         checkParameter(top_val, Real, False)
-        green_box = BoxAnnotation(top=top_val, bottom=0, fill_alpha=0.1, fill_color="green")
+        green_box = BoxAnnotation(top=top_val, bottom=bottom_val, fill_alpha=0.1, fill_color="green")
         self.__own_figure.add_layout(green_box)
 
 
