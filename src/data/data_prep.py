@@ -10,6 +10,8 @@ import io
 import pandas as pd
 # For various calculations
 import numpy as np
+# For preprocessing transformations
+from sklearn.preprocessing import PowerTransformer
 
 # Import internal packages/ classes
 # Import the src-path to sys path that the internal modules can be found
@@ -121,11 +123,8 @@ def plot_time_series_data(file_name, file_title, figure_titles, x_data, y_labels
             figure.addCircleLayer(y_labels[index], x_data, y_datas[y_datas.columns[index]])
             # Add the whiskers (borders of the boxplot) if the flag is enabled
             if show_outliers:
-                # Calculate boundaries using the tukey method
-                q1, q3 = np.percentile(y_datas[y_datas.columns[index]], [25, 75])
-                IRQ = q3 - q1
-                lower_fence = q1 - (1.5 * IRQ)
-                upper_fence = q3 + (1.5 * IRQ)
+                # Calculate the outlier boundaries
+                lower_fence, upper_fence = calc_outlier_boundaries(y_datas[y_datas.columns[index]])
                 __own_logger.info("Add green box for calculated boundaries from %f to %f", lower_fence, upper_fence)
                 figure.add_green_box(lower_fence, upper_fence)
             plot.appendFigure(figure.getFigure())
@@ -247,6 +246,32 @@ def get_strong_correlated_columns(df, STRONG_CORR):
 
 #########################################################
 
+def calc_outlier_boundaries(data):
+    """
+    Function calculate the boundaries to detect outliers using the turkey method (boxplot)
+    ----------
+    Parameters:
+        df : pandas.core.frame.DataFrame
+            The data
+    ----------
+    Returns:
+        lower_fence : float
+            The calculated lower limit
+        upper_fence : float
+            The calculated upper limit
+    """
+
+    # Calculate boundaries using the tukey method
+    q1, q3 = np.percentile(data, [25, 75])
+    IRQ = q3 - q1
+    lower_fence = q1 - (1.5 * IRQ)
+    upper_fence = q3 + (1.5 * IRQ)
+    __own_logger.info("Calculated outlier boundaries: lower_fence=%f, upper_fence=%f", lower_fence, upper_fence)
+
+    return lower_fence, upper_fence
+
+#########################################################
+
 def data_preparation(preprocessed_data):
     """
     Function for data preparation
@@ -327,19 +352,47 @@ def data_preparation(preprocessed_data):
     # Logging some information about the new DataFrame structure
     log_overview_data_frame(df_processed_data)
     
-    # Outliers: Visualize values out of the whiskers (borders of the boxplot)
+    # Outliers
+    # Detect skewed data for which the detection of outliers is difficult
+    column_skew_values = df_processed_data.skew(axis='index')
+    __own_logger.info("Skewness of the columns:\n%s",column_skew_values)
+    # Skew values less than -1 or greater than 1 are highly skewed
+    column_names_highly_skewed = set()
+    for name,value in column_skew_values.items():
+        if abs(value) > 1:
+            column_names_highly_skewed.add(name)
+    __own_logger.info("Columns which contains highly skewed data:\n%s",column_names_highly_skewed)
+    #Transform highly skewed data for outlier detection
+    df_transformed = pd.DataFrame()
+    for column in column_names_highly_skewed:
+        # reshape data to have rows and columns
+        data = df_processed_data[column].values.reshape((len(df_processed_data[column].values),1))
+        # Transform with boxcox, but data must be strictly positive, so use yeo-johnson which works with positive and negative values
+        pt = PowerTransformer(method='yeo-johnson')
+        df_transformed.insert(len(df_transformed.columns), column + "_trans", pd.DataFrame(pt.fit_transform(data)))
+        # Add the transformed data columns to the existing DataFrame
+        df_processed_data = pd.concat([df_processed_data, df_transformed], axis=1)
+    # Visualize values out of the whiskers (borders of the boxplot)
     __own_logger.info("Visualize the whiskers to detect outliers")
     # Create dict to define which data should be visualized as figures
     dict_figures = {
-        "label": ['n_sick', 'calls', 'sby_need'],
+        "label": ['n_sick', 'calls', 'sby_need'] + df_transformed.columns.values.tolist(),
         "title": ["Number of emergency drivers who have registered a sick call", 
                   "Number of emergency calls",
-                  "Number of substitute drivers to be activated"]
+                  "Number of substitute drivers to be activated",
+                  "Yeo-Johnson transformed number of substitute drivers to be activated"]
     }
     plot_time_series_data("data_prep_pot_outl.html", "Potential Outliers", dict_figures.get('title'), df_processed_data.date, df_processed_data[dict_figures.get('label')].columns.values, df_processed_data[dict_figures.get('label')], show_outliers=True)
-    # TODO: Without deeper domain knowledge it is hard to handle potential outliers (detect real outliers, remove, replace,...).
-    #       The few values in n_sick and calls analyzed as outliers could be treated.
-    #       For sb_need no statement can be made here whether it contains outliers.
+    # Remove all rows of detected outliers, for that iterate over all columns except column 1 which contains the date and the columns which are highly skewed
+    for column in df_processed_data.iloc[:,1:].columns.drop(column_names_highly_skewed):
+        lower_fence, upper_fence = calc_outlier_boundaries(df_processed_data[column])
+        # Get the row indizes which contains outliers
+        row_indizes = df_processed_data[(df_processed_data[column] > upper_fence) | (df_processed_data[column] < lower_fence)].index
+        __own_logger.info("Drop rows due to detected outliers in column %s: Number of outliers detected %d", column, len(row_indizes))
+        # Drop the rows
+        df_processed_data.drop(row_indizes, inplace=True)
+    # Drop the transformed data columns
+    df_processed_data.drop(df_transformed.columns.values, inplace=True, axis=1)
 
     return df_processed_data
 
