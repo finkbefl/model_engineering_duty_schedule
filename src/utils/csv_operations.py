@@ -52,3 +52,20 @@ def save_data(df, dirname, filename):
 
     # Save the data to CSV file
     df.to_csv(filepath, index=False)
+
+#########################################################
+
+def convert_date_in_data_frame(df):
+    """
+    Function to convert the date object into DateTime
+    ----------
+    Parameters:
+        df : pandas.core.frame.DataFrame
+            The data
+    ----------
+    Returns:
+        no returns
+    """
+
+    # Convert the date objects into DateTime (raise an exception when parsing is invalid)
+    df.date = df.date.apply(lambda x: pd.to_datetime(x, errors='raise', utc=True))

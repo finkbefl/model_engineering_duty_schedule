@@ -23,5 +23,11 @@ conda env create --file program_requirements.yml
 python src/data/data_prep.py
 ```
 
+### Feature Selection and Data Split
+
+```bash
+python src/data/featurization.py
+```
+
 ## License
 [MIT](LICENSE)
