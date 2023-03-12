@@ -34,7 +34,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         Run Unittests to test the class PlotBokeh
         """
         # Correct Parameter
-        file_name = os.path.join("5_output","unittestPlotBokeh.html")
+        file_name = os.path.join("output","unittestPlotBokeh.html")
         file_title = "Test Title"
         result = PlotBokeh(file_name, file_title)
         expectation = type(PlotBokeh(file_name, file_title))
@@ -60,7 +60,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         Run Unittests to test the class PlotMultipleLayers and add circle layers
         """
         # Correct Parameter (optional parameter tested within class test_PlotBokeh)
-        file_name = os.path.join("5_output","unittestMultipleLayersCircle.html")
+        file_name = os.path.join("output","unittestMultipleLayersCircle.html")
         file_title = "Test Title"
         PlotMultipleLayers("Test Title", "x", "y", file_name, file_title)
 
@@ -101,7 +101,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         """
         Run Unittests to test the class PlotMultipleLayers and add vertival bar layers
         """
-        file_name = os.path.join("5_output","unittestMultipleLayersVBar.html")
+        file_name = os.path.join("output","unittestMultipleLayersVBar.html")
         file_title = "Test Title"
         figure2 = PlotMultipleLayers("Test Title 2", "x", "y", file_name, file_title)
         # Add vertical bar layer
@@ -127,7 +127,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         """
         Run Unittests to test the class PlotMultipleLayers and set axis ranges
         """
-        file_name = os.path.join("5_output","unittestSetAxisRange.html")
+        file_name = os.path.join("output","unittestSetAxisRange.html")
         file_title = "Test Title"
         figure_3 = PlotMultipleLayers("Test Title", "x", "y", file_name, file_title)
         figure_3.addCircleLayer("test", self.series1, self.series2)
@@ -151,7 +151,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         """
         Run Unittests to test the class PlotMultipleLayers and add a green box
         """
-        file_name = os.path.join("5_output","unittestAddBox.html")
+        file_name = os.path.join("output","unittestAddBox.html")
         file_title = "Test Title"
         figure_4 = PlotMultipleLayers("Test Title", "x", "y", file_name, file_title)
         figure_4.addCircleLayer("test", self.series1, self.series2)
@@ -175,7 +175,7 @@ class UnitTestPlotBokeh(unittest.TestCase):
         Run Unittests to test the class PlotMultipleFigures
         """
         # Constructor parameter tested within class test_PlotBokeh
-        file_name = os.path.join("5_output","unittestMultipleFigures.html")
+        file_name = os.path.join("output","unittestMultipleFigures.html")
         file_title = "Test Title"
         plot = PlotMultipleFigures(file_name, file_title)
 

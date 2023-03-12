@@ -3,7 +3,7 @@
 # Import the external packages
 from bokeh.plotting import figure, show
 from bokeh.io import output_file
-from bokeh.layouts import gridplot
+from bokeh.layouts import gridplot, column
 from bokeh.palettes import Category10_10
 from pandas.core.series import Series
 from bokeh.plotting.figure import Figure
@@ -57,6 +57,8 @@ class PlotMultipleLayers(PlotBokeh):
             The label of the x axis
         y_label : str
             The label of the y axis
+        x_axis_type : str
+            The type of the x-axis
         file_name : str
             The file name (html) in which the figure is shown
         file_title : str
@@ -80,7 +82,7 @@ class PlotMultipleLayers(PlotBokeh):
     __own_logger = __own_logging.logger
 
     # Constructor Method
-    def __init__(self, figure_title, x_label, y_label, file_name=None, file_title=None):
+    def __init__(self, figure_title, x_label, y_label, x_axis_type='auto', file_name=None, file_title=None):
         # Call the Base Class Constructor
         PlotBokeh.__init__(self, file_name, file_title)
         # For color cycling (different colors for the different layers)
@@ -89,7 +91,7 @@ class PlotMultipleLayers(PlotBokeh):
         checkParameterString(figure_title)
         checkParameterString(x_label)
         checkParameterString(y_label)
-        self.__own_figure = figure(title=figure_title, x_axis_label=x_label, y_axis_label=y_label)
+        self.__own_figure = figure(title=figure_title, x_axis_type=x_axis_type, x_axis_label=x_label, y_axis_label=y_label)
         self.__own_logger.info("Bokeh plot for multiple layers initialized for figure %s", figure_title)
 
     def addCircleLayer(self, legend_label, x_data, y_data):
@@ -169,19 +171,21 @@ class PlotMultipleLayers(PlotBokeh):
         else:
             raise IllegalArgumentError("A range must be a value pair!")
 
-    def add_green_box(self, top_val):
+    def add_green_box(self, top_val, bottom_val=0):
         """
         Add a green box from y=0 up to the specified y value
         ----------
         Parameters:
             top_val : numbers.Real
                 The upper y value as limit for the color box
+            bottom_val : numbers.Real
+                The lower y value as limit for the color box
         ----------
         Returns:
             no returns
         """
         checkParameter(top_val, Real, False)
-        green_box = BoxAnnotation(top=top_val, bottom=0, fill_alpha=0.1, fill_color="green")
+        green_box = BoxAnnotation(top=top_val, bottom=bottom_val, fill_alpha=0.1, fill_color="green")
         self.__own_figure.add_layout(green_box)
 
 
@@ -256,17 +260,36 @@ class PlotMultipleFigures(PlotBokeh):
         self.__figure_list.append(figure)
         self.__own_logger.info("Appendend figure to Bokeh plot %s", figure)
 
-    def showPlot(self):
+    def showPlot(self, ncols=2, plot_width=None, plot_height=None):
         """
-        Show the plot
+        Show the plot in gridplot layout (not responsive, fixed sizes in pixel)
         ----------
         Parameters:
-            no parameter
+            ncols : int
+                The number of columns (default: 2)
+            plot_width : int
+                The plot width (default: None)
+            plot_height : int
+                The plot height (default: None)
         ----------
         Returns:
             Show the plot
         """
-        # Add the figures out of the list to the gridplot (with 2 colums) and show it
-        self.__own_logger.info("Show the gridplot")
-        plot = gridplot(self.__figure_list, ncols=2)
+        self.__own_logger.info("Show the gridplot layout")
+        plot = gridplot(self.__figure_list, ncols=ncols, plot_width=plot_width, plot_height=plot_height)
+        show(plot)
+
+    def showPlotResponsive(self, sizing_mode='stretch_both'):
+        """
+        Show the plot in column layout (responsive)
+        ----------
+        Parameters:
+            sizing_mode : Str
+                The sizing mode (default: stretch both -> completely responsive)
+        ----------
+        Returns:
+            Show the plot
+        """
+        self.__own_logger.info("Show the column layout")
+        plot = column(self.__figure_list, sizing_mode=sizing_mode)
         show(plot)
