@@ -4,6 +4,7 @@
 # Operating system functionalities
 import sys
 import os
+from pathlib import Path
 # Stream handling
 import io
 # To handle pandas data frames
@@ -12,6 +13,8 @@ import pandas as pd
 import numpy as np
 # For preprocessing transformations
 from sklearn.preprocessing import PowerTransformer
+# Using statsmodel for detecting stationarity
+from statsmodels.tsa.stattools import adfuller, kpss
 
 # Import internal packages/ classes
 # Import the src-path to sys path that the internal modules can be found
@@ -20,33 +23,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from utils.own_logging import OwnLogging
 # To plot data with bokeh
 from utils.plot_data import PlotMultipleLayers, PlotMultipleFigures
+# To handle csv files
+from utils.csv_operations import load_data, save_data
+
 
 #########################################################
 
 # Initialize the logger
-__own_logger = OwnLogging(__name__).logger
-
-#########################################################
-
-def load_raw_data():
-    """
-    Loading the raw data
-    ----------
-    Parameters:
-        no parameters
-    ----------
-    Returns:
-        The raw data as pandas DataFrame
-    """
-
-    # Join the filepath of the raw data file
-    filepath = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "sickness_table.csv")
-    __own_logger.info("Filepath: %s", filepath)
-
-    # Read the data from CSV file
-    data_raw = pd.read_csv(filepath)
-
-    return data_raw
+__own_logger = OwnLogging(Path(__file__).stem).logger
 
 #########################################################
 
@@ -246,7 +230,7 @@ def get_strong_correlated_columns(df, STRONG_CORR):
 
 #########################################################
 
-def calc_outlier_boundaries(data):
+def calc_outlier_boundaries(df):
     """
     Function calculate the boundaries to detect outliers using the turkey method (boxplot)
     ----------
@@ -262,13 +246,65 @@ def calc_outlier_boundaries(data):
     """
 
     # Calculate boundaries using the tukey method
-    q1, q3 = np.percentile(data, [25, 75])
+    q1, q3 = np.percentile(df, [25, 75])
     IRQ = q3 - q1
     lower_fence = q1 - (1.5 * IRQ)
     upper_fence = q3 + (1.5 * IRQ)
     __own_logger.info("Calculated outlier boundaries: lower_fence=%f, upper_fence=%f", lower_fence, upper_fence)
 
     return lower_fence, upper_fence
+
+#########################################################
+
+def stationarity_test(df):
+    """
+    Function to test the data columns for stationarity (Augmented Dickey-Fuller and Kwiatkowski-Phillips-Schmidt-Shin in combination for more confident decisions)
+    ----------
+    Parameters:
+        df : pandas.core.frame.DataFrame
+            The data
+    ----------
+    Returns:
+        dict with the stationarity test results:
+        {'column_name': 
+            {'ADF': Boolean, 'KPSS': Boolean},
+        ...
+        }
+    """
+
+    stationarity_dict= {} # create an empty dictionary for the test results
+    # Iterate over all columns except column one (date)
+    for column in df.iloc[:,1:]:
+        # Do not consider data which not vary over time, so skip the column which only consists of one value
+        if (df[column].nunique() == 1):
+            __own_logger.info("Skip column: %s because it not vary over time", column)
+            continue
+        # Check for stationarity
+        # Augmented Dickey-Fuller Test
+        adf_decision_stationary = False
+        try:
+            adf_output = adfuller(df[column])
+            # Decision based on pval
+            adf_pval = adf_output[1]
+            if adf_pval < 0.05: 
+                adf_decision_stationary = True
+        except Exception as error:
+            __own_logger.error("Error during ADF Test", exc_info=error)
+        # Kwiatkowski-Phillips-Schmidt-Shin Test
+        kpss_decision_stationary = False
+        try:
+            kpss_output = kpss(df[column])
+            # Decision based on pval
+            kpss_pval = kpss_output[1]
+            if kpss_pval >= 0.05: 
+                kpss_decision_stationary = True
+        except Exception as error:
+            __own_logger.error("Error during KPSS Test", exc_info=error)
+        # Add the test results to the dict
+        stationarity_dict[column] = {"ADF": adf_decision_stationary, "KPSS": kpss_decision_stationary}
+    __own_logger.info("Stationarity: %s", stationarity_dict)
+
+    return stationarity_dict
 
 #########################################################
 
@@ -281,7 +317,9 @@ def data_preparation(preprocessed_data):
             The preprocessed (raw) data
     ----------
     Returns:
-        The processed data as DataFrame
+        The processed data as DataFrame:
+        df_processed_data: Without consideration of stationarity
+        df_stationary_data: Strict stationarity data
     """
 
     # Copy the data for preparation into a new variable
@@ -393,10 +431,39 @@ def data_preparation(preprocessed_data):
         df_processed_data.drop(row_indizes, inplace=True)
     # Drop the transformed data columns
     df_processed_data.drop(df_transformed.columns.values, inplace=True, axis=1)
+    # TODO: Do not delete transformed data?
 
-    return df_processed_data
+    # Time Series Stationarity
+    # Copy the data for stationary data
+    df_stationary_data = df_processed_data.copy()
+    # Test the columns for stationarity
+    stationarity_results = stationarity_test(df_stationary_data)
+    # Iterate over the tested columns and apply a first order differencing
+    for column, results in stationarity_results.items():
+        # Get the results
+        result_adf = results["ADF"]
+        result_kpss = results["KPSS"]
+        # Check for non-stationarity
+        if result_adf == False or result_kpss == False:
+            # non-stationary: Try a first order dfferencing
+            __own_logger.info("The column %s is non-stationary, try a first order differencing", column)
+            df_stationary_data[column] = df_stationary_data[column].diff()
+            # Rename the column to add differencing information
+            df_stationary_data.rename(columns={column:column + "_diff"}, inplace=True)
+        else:
+            # The time series is strict stationary
+            __own_logger.info("The column %s is strict stationary", column)
+    # The differenced data contains one less data point (NaN), which must be dropped
+    df_stationary_data.dropna(inplace=True)
+    # Test the columns again for stationarity
+    stationarity_results = stationarity_test(df_stationary_data)
+    # Are the columns now strict stationary?
+    for column in stationarity_results:
+        if stationarity_results[column].values() == False:
+            __own_logger.error("########## Error during the data preparation for stationary data ##########")
+            sys.exit('The data is not strict stationary! Fix it!')
 
-
+    return df_processed_data, df_stationary_data
 
 #########################################################
 #########################################################
@@ -410,7 +477,7 @@ if __name__ == "__main__":
 
     # Loading the raw data as pandas DataFrame
     __own_logger.info("########## Loading the raw data ##########")
-    df_raw_data = load_raw_data()
+    df_raw_data = load_data("raw", "sickness_table.csv")
 
     # Logging some information about the raw data
     __own_logger.info("########## Logging information about the raw data ##########")
@@ -440,7 +507,7 @@ if __name__ == "__main__":
 
     # Data preparation
     __own_logger.info("########## Preparing the data ##########")
-    df_processed_data = data_preparation(df_preprocessed_data)
+    df_processed_data, df_processed_stationary_data = data_preparation(df_preprocessed_data)
 
     # Logging some information about the prepared data
     __own_logger.info("########## Logging information about the prepared data ##########")
@@ -458,3 +525,22 @@ if __name__ == "__main__":
                   "Number of substitute drivers to be activated"]
     }
     plot_time_series_data("prepared_input_data.html", "Prepared Input Data", dict_figures.get('title'), df_processed_data.date, df_processed_data[dict_figures.get('label')].columns.values, df_processed_data[dict_figures.get('label')])
+    # Visualize the prepared stationary data
+    __own_logger.info("########## Visualize the prepared stationary data as time series ##########")
+    # Create dict to define which data should be visualized as figures
+    dict_figures = {
+        "label": df_processed_stationary_data.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
+        "title": ["First order differencing of number of emergency drivers who have registered a sick call", 
+                  "First order differencing of number of emergency calls",
+                  "First order differencing of number of emergency drivers on duty",
+                  "Number of available substitute drivers",
+                  "First order differencing of number of substitute drivers to be activated"]
+    }
+    plot_time_series_data("prepared_input_data_stationary.html", "Prepared Stationary Input Data", dict_figures.get('title'), df_processed_stationary_data.date, df_processed_stationary_data[dict_figures.get('label')].columns.values, df_processed_stationary_data[dict_figures.get('label')])
+
+    # Save the prepared data to csv file
+    __own_logger.info("########## Save the prepared data as time series ##########")
+    save_data(df_processed_data, "processed", "sickness_table_prepared.csv")
+    # Save the prepared stationary data to csv file
+    __own_logger.info("########## Save the prepared stationary data as time series ##########")
+    save_data(df_processed_stationary_data, "processed", "sickness_table_prepared_stationary.csv")

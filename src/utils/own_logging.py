@@ -33,13 +33,24 @@ class OwnLogging():
             self.__logger = logging.getLogger(package_name)
 
         # Configure the logging mechanism
-        logging.basicConfig(
-                    # Default Level 
-                    level=logging.INFO,
-                    # Write the logs into file 
-                    filename=os.path.join("logs","main.log"),filemode="w",
-                    # Formatting the logs
-                    format="\t%(asctime)s,%(msecs)d %(levelname)-8s [%(name)s:%(filename)s-%(funcName)s(%(lineno)d)] \n%(message)s")
+        # Use the basicConfig when writing to one file 
+        #logging.basicConfig(
+        #            # Default Level 
+        #            level=logging.INFO,
+        #            # Write the logs into file 
+        #            filename=os.path.join("logs","main.log"),filemode="w",
+        #            # Formatting the logs
+        #            format="\t%(asctime)s,%(msecs)d %(levelname)-8s [%(name)s:%(filename)s-%(funcName)s(%(lineno)d)] \n%(message)s"
+        #)
+        # When writing to different files:
+        # Formatting the logs
+        formatter = logging.Formatter("\t%(asctime)s,%(msecs)d %(levelname)-8s [%(name)s:%(filename)s-%(funcName)s(%(lineno)d)] \n%(message)s")
+        # Write the logs into file 
+        file_handler = logging.FileHandler(os.path.join("logs",package_name + ".log"), 'w')
+        file_handler.setFormatter(formatter)
+        self.__logger.addHandler(file_handler)
+        # Set the level
+        self.__logger.setLevel(logging.INFO)
 
         self.__logger.debug("Logger initialization for package/module <%s>", package_name)
 
