@@ -37,8 +37,8 @@ def data_feature_selection(df):
         The featurized data as DataFrame
     """
 
-    # Using all prepared columns
-    __own_logger.info("Select all prepared columns: %s", df.columns)
+    # Using all prepared columns in a first trial
+    __own_logger.info("First Trial: Select all prepared columns: %s", df.columns)
     df_featurized = df_prepared.copy()
 
     return df_featurized
@@ -47,7 +47,7 @@ def data_feature_selection(df):
 
 def data_split(df, test_size):
     """
-    Function for splitting the data into train and test set
+    Function for splitting the data
     ----------
     Parameters:
         df : pandas.core.frame.DataFrame
@@ -57,11 +57,11 @@ def data_split(df, test_size):
     ----------
     Returns:
         The splitted data as DataFrame:
-        df_train: Without consideration of stationarity
-        df_test: Strict stationarity data
+        df_train: Training Set
+        df_test: Testing Set
     """
 
-    __own_logger.info("Split the data with a test size of %f", test_size)
+    __own_logger.info("First Trial: Split the data into train and test with a test size of %f", test_size)
     df_train, df_test = train_test_split(df, test_size=test_size, shuffle=False)
 
     return df_train, df_test
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     convert_date_in_data_frame(df_prepared_stationary)
 
     # Featurize the data: Non-stationary for the time being
-    __own_logger.info("########## Featurize the data ##########")
+    __own_logger.info("########## Featurize the data: Using the non-stationary data in a first trial ##########")
     # TODO: Using the stationary data?
     df_featurized = data_feature_selection(df_prepared)
 
