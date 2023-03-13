@@ -24,7 +24,7 @@ from utils.own_logging import OwnLogging
 # To plot data with bokeh
 from utils.plot_data import PlotMultipleLayers, PlotMultipleFigures
 # To handle csv files
-from utils.csv_operations import load_data, save_data
+from utils.csv_operations import load_data, save_data, convert_date_in_data_frame
 
 
 #########################################################
@@ -53,24 +53,6 @@ def log_overview_data_frame(df):
     buffer.write("Data Info: ")
     df.info(buf=buffer)
     __own_logger.info(buffer.getvalue())
-
-#########################################################
-
-def convert_date_in_data_frame(df):
-    """
-    Function to convert the date object into DateTime
-    ----------
-    Parameters:
-        df : pandas.core.frame.DataFrame
-            The data
-    ----------
-    Returns:
-        no returns
-    """
-
-    # Convert the date objects into DateTime (raise an exception when parsing is invalid)
-    __own_logger.info("Convert the column date to DateTime")
-    df.date = df.date.apply(lambda x: pd.to_datetime(x, errors='raise', utc=True))
 
 #########################################################
 
@@ -176,8 +158,7 @@ def data_preprocessing(raw_data):
     __own_logger.info("Copy the DataFrame for preprocessing")
     df_preprocessed_data = raw_data.copy()
     # Convert the date
-    __own_logger.info("Convert the date")
-    # Convert the date
+    __own_logger.info("Convert the column date to DateTime")
     convert_date_in_data_frame(df_preprocessed_data)
 
     # Drop the column with index 0 (unamed): Only contains the row number that is not needed (DataFrame has internal index)
