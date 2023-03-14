@@ -45,7 +45,7 @@ def data_feature_selection(df):
 
 #########################################################
 
-def data_split(df, test_size):
+def data_split(df, test_size, target_variable):
     """
     Function for splitting the data
     ----------
@@ -54,17 +54,29 @@ def data_split(df, test_size):
             The data to split
         test_size : float
             The test size as proportion of the whole dataset (value between 0 and 1)
+        target_variable : String
+            The column name of the target variable
     ----------
     Returns:
-        The splitted data as DataFrame:
-        df_train: Training Set
-        df_test: Testing Set
+        The splitted data as DataFrames:
+        X_train: Input variables for training
+        X_test: Input variables for evaluation
+        y_train: Target variable for training
+        y_test: Target variable for evaluation
     """
 
     __own_logger.info("First Trial: Split the data into train and test with a test size of %f", test_size)
-    df_train, df_test = train_test_split(df, test_size=test_size, shuffle=False)
+    __own_logger.info("First Trial: The target variable is column %s", target_variable)
+    # Split in train- and test-data and seperate the target-value from the input-values
+    X_train, X_test, y_train, y_test = train_test_split(df.loc[:,df.columns!=target_variable], df.loc[:,[df.date.name,target_variable]], test_size=test_size, shuffle=False)
+    #X_train, X_test, y_train, y_test = train_test_split(df.loc[:,df.columns!=target_variable], df.loc[:,df.columns==target_variable], test_size=test_size, shuffle=False)
+    # Set the indey to the date column
+    X_train.set_index(X_train.date)
+    X_test.set_index(X_test.date)
+    y_train.set_index(y_train.date)
+    y_test.set_index(y_test.date)
 
-    return df_train, df_test
+    return X_train, X_test, y_train, y_test
 
 #########################################################
 
@@ -129,11 +141,14 @@ if __name__ == "__main__":
     # TODO: Using the stationary data?
     df_featurized = data_feature_selection(df_prepared)
 
-    # Split the data into train and test set: Testset should contain a whole seasonal period, e.g. 1 from 3 years
+    # Split the data into train and test set: Testset should contain a whole seasonal period, e.g. 1 from 4 years, and seperate the target-value
     __own_logger.info("########## Split the data into train and test set ##########")
-    df_train, df_test = data_split(df_featurized, 1/3)
+    X_train, X_test, y_train, y_test = data_split(df_featurized, 1/4, "sby_need")
 
     # Visualize the train data
+    # Merge the train-data for visualization
+    df_train = X_train.copy()
+    df_train[y_train.columns] = y_train
     __own_logger.info("########## Visualize the train data as time series ##########")
     # Create dict to define which data should be visualized as figures
     dict_figures = {
@@ -147,6 +162,9 @@ if __name__ == "__main__":
     plot_time_series_data("train_data.html", "Train Data", dict_figures.get('title'), df_train.date, df_train[dict_figures.get('label')].columns.values, df_train[dict_figures.get('label')])
 
     # Visualize the test data
+     # Merge the test-data for visualization
+    df_test = X_test.copy()
+    df_test[y_test.columns] = y_test
     __own_logger.info("########## Visualize the test data as time series ##########")
     # Create dict to define which data should be visualized as figures
     dict_figures = {
@@ -161,10 +179,12 @@ if __name__ == "__main__":
     
     # Save the train data to csv file
     __own_logger.info("########## Save the train data as time series ##########")
-    save_data(df_train, "modeling", "train_data.csv")
+    save_data(X_train, "modeling", "train_input.csv")
+    save_data(y_train, "modeling", "train_target.csv")
     # Save the test data to csv file
     __own_logger.info("########## Save the test data as time series ##########")
-    save_data(df_test, "modeling", "test_data.csv")
+    save_data(X_test, "modeling", "test_input.csv")
+    save_data(y_test, "modeling", "test_target.csv")
 
 
 
