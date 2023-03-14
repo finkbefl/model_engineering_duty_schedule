@@ -17,6 +17,10 @@ from utils.plot_data import PlotMultipleLayers, PlotMultipleFigures
 from utils.csv_operations import load_data, save_data, convert_date_in_data_frame
 # For ExponentialSmoothing Forecasting
 from statsmodels.tsa.api import ExponentialSmoothing
+# For evaluation metrics
+from sklearn import metrics
+# For various calculations
+import numpy as np
 
 #########################################################
 
@@ -97,16 +101,60 @@ class BaselineModel():
         """
         # Train the baseline model
         own_logger.info("Train the baseline model")
-        # TODO: Seasonal period should be detected automatically!
-        #exp = ExponentialSmoothing(y_train, trend='additive', seasonal='additive')
+        # ExponentialSmoothing-Model with additive decomposition with daily data with a yearly cycle (seasonal_periods=365)
+        # TODO: Seasonal period should be detected automatically?
+        #exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive')
         exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive', seasonal_periods=365)
         self.__model = exp.fit(use_brute=True, optimized=True)
 
     def predict(self, len):
+        """
+        Time Series Forecast
+        ----------
+        Parameters:
+            len : int
+                The length of the series to predict
+        ----------
+        Returns:
+            The predictions as Series
+        """
         # Prediction
         own_logger.info("Prediction of %d values", len)
         y_hat = self.__model.forecast(len)
         return y_hat
+    
+    def evaluate(self, y_true, y_pred):
+        """
+        Evaluate the time series forecast
+        ----------
+        Parameters:
+            y_true : Series
+                The true values
+            y_pred : Series
+                The predicted values
+        ----------
+        Returns:
+            The evaluation metrics as float:
+                MSE, MAE, RMSE, MAPE, R2
+        """
+        own_logger.info("Calculate various metrics for evaluation")
+        # MSE
+        MSE = metrics.mean_squared_error(y_true, y_pred)
+        own_logger.info("MSE = %f", MSE)
+        # MAE
+        MAE = metrics.mean_absolute_error(y_true, y_pred)
+        own_logger.info("MAE = %f", MAE)
+        # RMSE
+        RMSE = np.sqrt(metrics.mean_squared_error(y_true, y_pred))
+        own_logger.info("RMSE = %f", RMSE)
+        # MAPE
+        MAPE = metrics.mean_absolute_percentage_error(y_true, y_pred)
+        own_logger.info("MAPE = %f", MAPE)
+        #R2
+        R2 = metrics.r2_score(y_true, y_pred)
+        own_logger.info("R2 = %f", R2)
+
+        return MSE, MAE, RMSE, MAPE, R2
 
 #########################################################
 #########################################################
@@ -132,6 +180,10 @@ if __name__ == "__main__":
     convert_date_in_data_frame(X_test)
     convert_date_in_data_frame(y_test)
 
+    #Set datetime as index so that the frequency of the data can be automatically detected?
+    # TODO: Does not work maybe due to missing rows (deleted outliers)?
+    #y_train.set_index(y_train.date, inplace=True)
+
     # Train the baseline model
     own_logger.info("########## Train the baseline model ##########")
     __baseline_model = BaselineModel()
@@ -144,11 +196,19 @@ if __name__ == "__main__":
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
-    df_y['y_hat'] = y_hat.values
+    df_y[y_test.sby_need.name + "_pred"] = y_hat.values
     own_logger.info("########## Visualize the forcast data ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
         "label": df_y.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
     }
     plot_time_series_data_as_layers("baseline_model.html", "Baseline Model", "Forecast vs. Testdata", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
-    
+
+    # Metrics for Evaluation
+    MSE, MAE, RMSE, MAPE, R2 = __baseline_model.evaluate(y_test.iloc[:,1:], y_hat)
+    own_logger.info("########## Evaluation Metrics of the Baseline Model: ##########")
+    own_logger.info("MSE = %f", MSE)
+    own_logger.info("MAE = %f", MAE)
+    own_logger.info("RMSE = %f", RMSE)
+    own_logger.info("MAPE = %f", MAPE)
+    own_logger.info("R2 = %f", R2)

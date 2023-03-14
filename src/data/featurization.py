@@ -39,6 +39,7 @@ def data_feature_selection(df):
 
     # Using all prepared columns in a first trial
     __own_logger.info("First Trial: Select all prepared columns: %s", df.columns)
+    # TODO Are all input variables significant regarding the target variable?
     df_featurized = df_prepared.copy()
 
     return df_featurized
@@ -66,6 +67,7 @@ def data_split(df, test_size, target_variable):
     """
 
     __own_logger.info("First Trial: Split the data into train and test with a test size of %f", test_size)
+    # TODO: Add a variable with the quaterly info to allow the distribution more efficiently over a season? Or calculate back one season from the latest date?
     __own_logger.info("First Trial: The target variable is column %s", target_variable)
     # Split in train- and test-data and seperate the target-value from the input-values
     X_train, X_test, y_train, y_test = train_test_split(df.loc[:,df.columns!=target_variable], df.loc[:,[df.date.name,target_variable]], test_size=test_size, shuffle=False)
