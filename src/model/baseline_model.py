@@ -67,9 +67,9 @@ def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label
 
 #########################################################
 
-class BaselineModel():
+class ExponentialSmoothingModel():
     """
-    A class for a baseline model
+    A class for a baseline model: ExponentialSmoothing
     ----------
     Attributes:
         file_name : str
@@ -83,7 +83,7 @@ class BaselineModel():
 
     # Constructor Method
     def __init__(self):
-        own_logger.info("Initialize a baseline model")
+        own_logger.info("Initialize a baseline model: ExponentialSmoothing")
         # TODO: Intializations?
 
     def train(self, X_train, y_train):
@@ -184,9 +184,9 @@ if __name__ == "__main__":
     # TODO: Does not work maybe due to missing rows (deleted outliers)?
     #y_train.set_index(y_train.date, inplace=True)
 
-    # Train the baseline model
+    # Train the baseline model: ExponentialSmoothing
     own_logger.info("########## Train the baseline model ##########")
-    __baseline_model = BaselineModel()
+    __baseline_model = ExponentialSmoothingModel()
     __baseline_model.train(X_train, y_train)
 
     # Forecast
