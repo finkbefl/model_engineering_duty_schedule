@@ -68,4 +68,4 @@ def convert_date_in_data_frame(df):
     """
 
     # Convert the date objects into DateTime (raise an exception when parsing is invalid)
-    df.date = df.date.apply(lambda x: pd.to_datetime(x, errors='raise', utc=True))
+    df.date = pd.to_datetime(df.date, errors='raise', utc=True)

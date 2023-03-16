@@ -29,5 +29,11 @@ python src/data/data_prep.py
 python src/data/featurization.py
 ```
 
+### Baseline Model
+
+```bash
+python src/model/baseline_model.py
+```
+
 ## License
 [MIT](LICENSE)

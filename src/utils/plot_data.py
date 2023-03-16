@@ -215,6 +215,21 @@ class PlotMultipleLayers(PlotBokeh):
         self.__own_logger.info("Show the plot")
         show(self.__own_figure)
 
+    def showPlotResponsive(self, sizing_mode='stretch_both'):
+        """
+        Show the plot in column layout (responsive)
+        ----------
+        Parameters:
+            sizing_mode : Str
+                The sizing mode (default: stretch both -> completely responsive)
+        ----------
+        Returns:
+            Show the plot
+        """
+        self.__own_logger.info("Show the column layout")
+        plot = column(self.__own_figure, sizing_mode=sizing_mode)
+        show(plot)
+
 class PlotMultipleFigures(PlotBokeh):
     """
     A class for easy plotting multiple figures with bokeh and output the result in a static HTML file

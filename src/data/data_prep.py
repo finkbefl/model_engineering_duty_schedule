@@ -319,7 +319,8 @@ def data_preparation(preprocessed_data):
     else:
         __own_logger.warning("Missing values in the dataset which must be preprocessed!")
         sys.exit('Fix missing values in the dataset!')
-        # TODO If there are missing values in the dataset, these must be preprocessed!  
+        # TODO If there are missing values in the dataset, these must be preprocessed!
+    # TODO Check the datetime series to detect if a whole row is missing?  
 
 
     # Redundancy: Rows
@@ -408,7 +409,8 @@ def data_preparation(preprocessed_data):
         # Get the row indizes which contains outliers
         row_indizes = df_processed_data[(df_processed_data[column] > upper_fence) | (df_processed_data[column] < lower_fence)].index
         __own_logger.info("Drop rows due to detected outliers in column %s: Number of outliers detected %d", column, len(row_indizes))
-        # Drop the rows
+        # First trial: Drop the rows
+        # TODO: Drop the whole row because of a missing outlier a good idea? Maybe fill the outlier with an interpolated value would be a better approach?
         df_processed_data.drop(row_indizes, inplace=True)
     # Drop the transformed data columns
     df_processed_data.drop(df_transformed.columns.values, inplace=True, axis=1)
