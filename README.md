@@ -35,5 +35,11 @@ python src/data/featurization.py
 python src/model/baseline_model.py
 ```
 
+### Model Benchmark
+
+```bash
+python src/model/model_benchmark.py
+```
+
 ## License
 [MIT](LICENSE)

@@ -1,12 +1,12 @@
-# Skript for training a baseline model (Any model that is worse than this is not worth being considered at all)
+# Skript to compare some models to find the best suitable one (benchmark)
 
 # Import the external packages
 # Operating system functionalities
 import sys
 import os
 from pathlib import Path
-# For ExponentialSmoothing Forecasting
-from statsmodels.tsa.api import ExponentialSmoothing
+# For auto_arima model
+import pmdarima as pm
 # For evaluation metrics
 from sklearn import metrics
 # For various calculations
@@ -67,9 +67,9 @@ def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label
 
 #########################################################
 
-class ExponentialSmoothingModel():
+class AutoArimaModel():
     """
-    A class for a baseline model: ExponentialSmoothing
+    A class for a auto_arima model
     ----------
     Attributes:
         file_name : str
@@ -83,7 +83,7 @@ class ExponentialSmoothingModel():
 
     # Constructor Method
     def __init__(self):
-        own_logger.info("Initialize a baseline model: ExponentialSmoothing")
+        own_logger.info("Initialize a auto arima model")
         # TODO: Intializations?
 
     def train(self, X_train, y_train):
@@ -99,29 +99,33 @@ class ExponentialSmoothingModel():
         Returns:
             no returns
         """
-        # Train the baseline model
-        own_logger.info("Train the baseline model")
-        # ExponentialSmoothing-Model with additive decomposition with daily data with a yearly cycle (seasonal_periods=365)
-        # TODO: Seasonal period should be detected automatically?
-        #exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive')
-        exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive', seasonal_periods=365)
-        self.__model = exp.fit(use_brute=True, optimized=True)
+        # Train the model
+        own_logger.info("Train the model")
+        # auto_arima with daily data with a yearly cycle (seasonal_periods=365)
+        #self.__model = pm.auto_arima(y_train.iloc[:,1:], X_train.iloc[:,1:], seasonal=True, m=365, stationary=False, test='kpss', stepwise=True, trace=True)
+        # Big values for seasonal period takes too long, for first tests use simpler approach, so no seasonality: TODO!
+        self.__model = pm.auto_arima(y_train.iloc[:,1:], X_train.iloc[:,1:], seasonal=True, m=1, stationary=False, test='kpss', stepwise=True, trace=True)
+        own_logger.info("Best model: ARIMA%s%s", self.__model.order, self.__model.seasonal_order)
+        # Get summary of finding the best hyperparameters
+        #self.__model.summary()
 
-    def predict(self, len):
+    def predict(self, len, exogenous):
         """
         Time Series Forecast
         ----------
         Parameters:
             len : int
                 The length of the series to predict
+            exogenous : DataFrame
+                Exogenous array for prediction
         ----------
         Returns:
-            The predictions as Series
+            The predictions as Series and the confidence interval
         """
         # Prediction
         own_logger.info("Prediction of %d values", len)
-        y_hat = self.__model.forecast(len)
-        return y_hat
+        y_hat, conf_interval = self.__model.predict(len, exogenous=exogenous, return_conf_int=True)
+        return y_hat, conf_interval
     
     def evaluate(self, y_true, y_pred):
         """
@@ -184,29 +188,33 @@ if __name__ == "__main__":
     # TODO: Does not work maybe due to missing rows (deleted outliers)?
     #y_train.set_index(y_train.date, inplace=True)
 
-    # Train the baseline model: ExponentialSmoothing
-    own_logger.info("########## Train the baseline model ##########")
-    __baseline_model = ExponentialSmoothingModel()
-    __baseline_model.train(X_train, y_train)
+    # Train the model
+    own_logger.info("########## Train the classic statistical model: auto_arima ##########")
+    __model = AutoArimaModel()
+    # Exclude constant column
+    __model.train(X_train.loc[:,X_train.columns!="n_sby"], y_train)
 
+    # Merge the test data for prediction without columns date and n_sby
+    df_test = X_test.loc[:,~X_test.columns.isin(["date", "n_sby"])]
+    df_test[y_test.sby_need.name] = y_test.loc[:,y_test.sby_need.name]
     # Forecast
     own_logger.info("########## Forecasting ##########")
-    y_hat = __baseline_model.predict(len(y_test))
+    y_hat, conf_interval = __model.predict(len(df_test), X_test.loc[:,~X_test.columns.isin(["date", "n_sby"])])
 
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat.values
+    df_y[y_test.sby_need.name + "_pred"] = y_hat
     own_logger.info("########## Visualize the forcast data ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
         "label": df_y.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
     }
-    plot_time_series_data_as_layers("baseline_model.html", "Baseline Model", "Forecast vs. Testdata", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
+    plot_time_series_data_as_layers("model_benchmark.html", "Model Benchmark", "AutoArimaModel", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2 = __baseline_model.evaluate(y_test.iloc[:,1:], y_hat)
-    own_logger.info("########## Evaluation Metrics of the Baseline Model: ##########")
+    MSE, MAE, RMSE, MAPE, R2 = __model.evaluate(y_test.iloc[:,1:], y_hat)
+    own_logger.info("########## Evaluation Metrics of the Model: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
