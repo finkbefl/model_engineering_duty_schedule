@@ -5,8 +5,8 @@
 import sys
 import os
 from pathlib import Path
-# For ExponentialSmoothing Forecasting
-from statsmodels.tsa.api import ExponentialSmoothing
+# For Seasonal Naïve Forecasting
+from statsforecast.models import SeasonalNaive
 # For evaluation metrics
 from sklearn import metrics
 # For various calculations
@@ -67,32 +67,29 @@ def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label
 
 #########################################################
 
-class ExponentialSmoothingModel():
+class SeasonalNaiveModel():
     """
-    A class for a baseline model: ExponentialSmoothing
+    A class for a baseline model: SeasonalNaive (univariate, only consider the target variable)
     ----------
     Attributes:
-        file_name : str
-            The file name (html) in which the figure is shown
-        file_title : str
-            The output file title
+        no attributes
     ----------
     Methods
-        no methods
+        train: Method to train the model
+        predict: Method for time series prediction
+        evaluate: Method for evaluation
     """
 
     # Constructor Method
     def __init__(self):
-        own_logger.info("Initialize a baseline model: ExponentialSmoothing")
+        own_logger.info("Initialize a baseline model: SeasonalNaive")
         # TODO: Intializations?
 
-    def train(self, X_train, y_train):
+    def train(self, y_train):
         """
         Train the model
         ----------
         Parameters:
-            X_train : DataFrame
-                The x data
             y_train : Series
                 The y data
         ----------
@@ -101,11 +98,10 @@ class ExponentialSmoothingModel():
         """
         # Train the baseline model
         own_logger.info("Train the baseline model")
-        # ExponentialSmoothing-Model with additive decomposition with daily data with a yearly cycle (seasonal_periods=365)
-        # TODO: Seasonal period should be detected automatically?
-        #exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive')
-        exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive', seasonal_periods=365)
-        self.__model = exp.fit(use_brute=True, optimized=True)
+        # SeasonalNaive-Model with daily data with a yearly cycle (season_length=365)
+        seasonal_naive = SeasonalNaive(season_length=365)
+        # Train the model (Note: The train data must be a 1D numpy array!)
+        self.__model = seasonal_naive.fit(y=y_train.iloc[:,1:].values.ravel())
 
     def predict(self, len):
         """
@@ -116,12 +112,13 @@ class ExponentialSmoothingModel():
                 The length of the series to predict
         ----------
         Returns:
-            The predictions as Series
+            The predictions as numpy array
         """
         # Prediction
         own_logger.info("Prediction of %d values", len)
-        y_hat = self.__model.forecast(len)
-        return y_hat
+        y_hat = self.__model.predict(len)
+        # return the point predictions out of the dict
+        return y_hat['mean']
     
     def evaluate(self, y_true, y_pred):
         """
@@ -166,28 +163,24 @@ if __name__ == "__main__":
 
     own_logger.info("########## START ##########")
 
-    # Loading the featurized data as pandas DataFrame
+    # Loading the featurized data as pandas DataFrame: Only the with the target variable (univariate)
     own_logger.info("########## Loading the training data ##########")
-    X_train = load_data("modeling", "train_input.csv")
+    #X_train = load_data("modeling", "train_input.csv")
     y_train = load_data("modeling", "train_target.csv")
-    X_test = load_data("modeling", "test_input.csv")
+    #X_test = load_data("modeling", "test_input.csv")
     y_test = load_data("modeling", "test_target.csv")
 
     # Convert the date
     own_logger.info("########## Convert the column date to DateTime ##########")
-    convert_date_in_data_frame(X_train)
+    #convert_date_in_data_frame(X_train)
     convert_date_in_data_frame(y_train)
-    convert_date_in_data_frame(X_test)
+    #convert_date_in_data_frame(X_test)
     convert_date_in_data_frame(y_test)
 
-    #Set datetime as index so that the frequency of the data can be automatically detected?
-    # TODO: Does not work maybe due to missing rows (deleted outliers)?
-    #y_train.set_index(y_train.date, inplace=True)
-
-    # Train the baseline model: ExponentialSmoothing
-    own_logger.info("########## Train the baseline model ##########")
-    __baseline_model = ExponentialSmoothingModel()
-    __baseline_model.train(X_train, y_train)
+    # Train the baseline model: SeasonalNaive
+    own_logger.info("########## Train the baseline model: SeasonalNaive (univariate, only consider the target variable) ##########")
+    __baseline_model = SeasonalNaiveModel()
+    __baseline_model.train(y_train)
 
     # Forecast
     own_logger.info("########## Forecasting ##########")
@@ -196,7 +189,7 @@ if __name__ == "__main__":
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat.values
+    df_y[y_test.sby_need.name + "_pred"] = y_hat
     own_logger.info("########## Visualize the forcast data ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {

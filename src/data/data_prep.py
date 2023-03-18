@@ -320,7 +320,16 @@ def data_preparation(preprocessed_data):
         __own_logger.warning("Missing values in the dataset which must be preprocessed!")
         sys.exit('Fix missing values in the dataset!')
         # TODO If there are missing values in the dataset, these must be preprocessed!
-    # TODO Check the datetime series to detect if a whole row is missing?  
+    # Check the datetime series to detect if a whole row is missing, so compare wit the date-range
+    num_missing_rows = len(pd.date_range(start = df_processed_data.date.iloc[0], end = df_processed_data.date.iloc[-1]).difference(df_processed_data.date))
+    __own_logger.info("Total number of missing rows: %d", num_missing_rows)
+    # Handle missing rows
+    if num_missing_rows == 0:
+        __own_logger.info("No missing rows in the dataset, handling not necessary")
+    else:
+        __own_logger.warning("Missing rows in the dataset which must be preprocessed!")
+        sys.exit('Fix missing rows in the dataset!')
+        # TODO If there are missing rows in the dataset, these must be preprocessed!
 
 
     # Redundancy: Rows
@@ -403,15 +412,20 @@ def data_preparation(preprocessed_data):
                   "Yeo-Johnson transformed number of substitute drivers to be activated"]
     }
     plot_time_series_data("data_prep_pot_outl.html", "Potential Outliers", dict_figures.get('title'), df_processed_data.date, df_processed_data[dict_figures.get('label')].columns.values, df_processed_data[dict_figures.get('label')], show_outliers=True)
-    # Remove all rows of detected outliers, for that iterate over all columns except column 1 which contains the date and the columns which are highly skewed
+    # Iterate over all columns except column 1 which contains the date and the columns which are highly skewed
     for column in df_processed_data.iloc[:,1:].columns.drop(column_names_highly_skewed):
         lower_fence, upper_fence = calc_outlier_boundaries(df_processed_data[column])
         # Get the row indizes which contains outliers
         row_indizes = df_processed_data[(df_processed_data[column] > upper_fence) | (df_processed_data[column] < lower_fence)].index
-        __own_logger.info("Drop rows due to detected outliers in column %s: Number of outliers detected %d", column, len(row_indizes))
         # First trial: Drop the rows
-        # TODO: Drop the whole row because of a missing outlier a good idea? Maybe fill the outlier with an interpolated value would be a better approach?
-        df_processed_data.drop(row_indizes, inplace=True)
+        #__own_logger.info("Drop rows due to detected outliers in column %s: Number of outliers detected %d", column, len(row_indizes))
+        #df_processed_data.drop(row_indizes, inplace=True)
+        # Second trial: Replace the outlier with the value of the previous row
+        __own_logger.info("Replace outliers in column %s: Number of outliers detected %d", column, len(row_indizes))
+        # At first, set the outliers to NaN
+        df_processed_data[column][row_indizes]=np.nan
+        # Then fill the missing values (outliers) with the previos observation
+        df_processed_data[column].ffill(inplace=True)
     # Drop the transformed data columns
     df_processed_data.drop(df_transformed.columns.values, inplace=True, axis=1)
     # TODO: Do not delete transformed data?

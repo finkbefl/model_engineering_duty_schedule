@@ -5,6 +5,8 @@
 import sys
 import os
 from pathlib import Path
+# For ExponentialSmoothing Forecasting
+from statsmodels.tsa.api import ExponentialSmoothing
 # For auto_arima model
 import pmdarima as pm
 # For evaluation metrics
@@ -29,15 +31,11 @@ own_logger = OwnLogging(Path(__file__).stem).logger
 
 #########################################################
 
-def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label, x_data, y_layers, y_datas):
+def figure_time_series_data_as_layers(figure_title, y_label, x_data, y_layers, y_datas):
     """
-    Function to plot time series data as multiple layers
+    Function to create a figure for time series data as multiple layers
     ----------
     Parameters:
-        file_name : str
-            The file name (html) in which the figure is shown
-        file_title : str
-            The output file title
         figure_title : str
             The title of the figure
         y_label : str
@@ -50,35 +48,77 @@ def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label
             The y data to plot
     ----------
     Returns:
-        no returns
+        The figure
     """
 
     try:
-        own_logger.info("Plot times series data with title %s as multiple layers to file %s", file_title, file_name)
-        figure_plot = PlotMultipleLayers(figure_title, "date", y_label, x_axis_type='datetime', file_name=os.path.join("output",file_name), file_title=file_title)
+        own_logger.info("Figure for times series data as multiple layers with title %s", figure_title)
+        figure = PlotMultipleLayers(figure_title, "date", y_label, x_axis_type='datetime')
         for (index, layer) in enumerate(y_layers):
             own_logger.info("Add CircleLayer for %s", layer)
-            figure_plot.addCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
-        # Show the plot in responsive layout, but only stretch the width
-        figure_plot.showPlotResponsive('stretch_width')
+            figure.addCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
+        return figure.getFigure()
     except TypeError as error:
-        own_logger.error("########## Error when trying to plot data ##########", exc_info=error)
+        own_logger.error("########## Error when trying to create figure ##########", exc_info=error)
         sys.exit('A parameter does not match the given type')
 
 #########################################################
 
-class AutoArimaModel():
+class Model():
     """
-    A class for a auto_arima model
+    A parent class for a model
     ----------
     Attributes:
-        file_name : str
-            The file name (html) in which the figure is shown
-        file_title : str
-            The output file title
+        no attributes
     ----------
     Methods
-        no methods
+        evaluate: Method for model evaluation
+    """
+    def evaluate(self, y_true, y_pred):
+        """
+        Evaluate the time series forecast
+        ----------
+        Parameters:
+            y_true : Series
+                The true values
+            y_pred : Series
+                The predicted values
+        ----------
+        Returns:
+            The evaluation metrics as float:
+                MSE, MAE, RMSE, MAPE, R2
+        """
+        own_logger.info("Calculate various metrics for evaluation")
+        # MSE
+        MSE = metrics.mean_squared_error(y_true, y_pred)
+        own_logger.info("MSE = %f", MSE)
+        # MAE
+        MAE = metrics.mean_absolute_error(y_true, y_pred)
+        own_logger.info("MAE = %f", MAE)
+        # RMSE
+        RMSE = np.sqrt(metrics.mean_squared_error(y_true, y_pred))
+        own_logger.info("RMSE = %f", RMSE)
+        # MAPE
+        MAPE = metrics.mean_absolute_percentage_error(y_true, y_pred)
+        own_logger.info("MAPE = %f", MAPE)
+        #R2
+        R2 = metrics.r2_score(y_true, y_pred)
+        own_logger.info("R2 = %f", R2)
+
+        return MSE, MAE, RMSE, MAPE, R2
+
+#########################################################
+
+class AutoArimaModel(Model):
+    """
+    A class for a auto_arima model (multivariate)
+    ----------
+    Attributes:
+        no attributes
+    ----------
+    Methods
+        train: Method to train the model
+        predict: Method for time series prediction
     """
 
     # Constructor Method
@@ -126,39 +166,67 @@ class AutoArimaModel():
         own_logger.info("Prediction of %d values", len)
         y_hat, conf_interval = self.__model.predict(len, exogenous=exogenous, return_conf_int=True)
         return y_hat, conf_interval
-    
-    def evaluate(self, y_true, y_pred):
+
+#########################################################
+
+class ExponentialSmoothingModel(Model):
+    """
+    A class for a ExponentialSmoothing (univariate) model
+    ----------
+    Attributes:
+        no attributes
+    ----------
+    Methods
+        train: Method to train the model
+        predict: Method for time series prediction
+    """
+
+    # Constructor Method
+    def __init__(self):
+        own_logger.info("Initialize a ExponentialSmoothing model")
+        # TODO: Intializations?
+
+    def train(self, y_train, consider_trend=True):
         """
-        Evaluate the time series forecast
+        Train the model
         ----------
         Parameters:
-            y_true : Series
-                The true values
-            y_pred : Series
-                The predicted values
+            y_train : Series
+                The y data
+            consider_trend : Boolean
+                Should a trend be considered?
         ----------
         Returns:
-            The evaluation metrics as float:
-                MSE, MAE, RMSE, MAPE, R2
+            no returns
         """
-        own_logger.info("Calculate various metrics for evaluation")
-        # MSE
-        MSE = metrics.mean_squared_error(y_true, y_pred)
-        own_logger.info("MSE = %f", MSE)
-        # MAE
-        MAE = metrics.mean_absolute_error(y_true, y_pred)
-        own_logger.info("MAE = %f", MAE)
-        # RMSE
-        RMSE = np.sqrt(metrics.mean_squared_error(y_true, y_pred))
-        own_logger.info("RMSE = %f", RMSE)
-        # MAPE
-        MAPE = metrics.mean_absolute_percentage_error(y_true, y_pred)
-        own_logger.info("MAPE = %f", MAPE)
-        #R2
-        R2 = metrics.r2_score(y_true, y_pred)
-        own_logger.info("R2 = %f", R2)
+        # Train the model
+        own_logger.info("Train the model")
+        # ExponentialSmoothing-Model with additive decomposition with daily data with a yearly cycle (seasonal_periods=365)
+        # TODO: Seasonal period should be detected automatically?
+        #exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive')
+        if consider_trend:
+            # With a trend
+            exp = ExponentialSmoothing(y_train.iloc[:,1:], trend='additive', seasonal='additive', seasonal_periods=365)
+        else:
+            # Without a trend
+            exp = ExponentialSmoothing(y_train.iloc[:,1:], seasonal='additive', seasonal_periods=365)
+        self.__model = exp.fit(use_brute=True, optimized=True)
 
-        return MSE, MAE, RMSE, MAPE, R2
+    def predict(self, len):
+        """
+        Time Series Forecast
+        ----------
+        Parameters:
+            len : int
+                The length of the series to predict
+        ----------
+        Returns:
+            The predictions as Series
+        """
+        # Prediction
+        own_logger.info("Prediction of %d values", len)
+        y_hat = self.__model.forecast(len)
+        return y_hat
 
 #########################################################
 #########################################################
@@ -188,8 +256,61 @@ if __name__ == "__main__":
     # TODO: Does not work maybe due to missing rows (deleted outliers)?
     #y_train.set_index(y_train.date, inplace=True)
 
+    # Model 1: ExponentialSmoothing
+    own_logger.info("########## Model 1: Classic Statistical ExponentialSmoothing (univariate, only consider the target variable) ##########")
     # Train the model
-    own_logger.info("########## Train the classic statistical model: auto_arima ##########")
+    own_logger.info("########## Train the Model 1 ##########")
+    # Model with the consideration of a trend
+    __model = ExponentialSmoothingModel()
+    # replace zero values?
+    #y_train_non_zeros = y_train.replace(to_replace=0, method='ffill')
+    #__model.train(y_train_non_zeros, False)
+    __model.train(y_train)
+    # Model without the consideration of a trend
+    __model_no_trend = ExponentialSmoothingModel()
+    __model_no_trend.train(y_train, False)
+    # Forecast
+    own_logger.info("########## Forecasting Model 1 ##########")
+    y_hat = __model.predict(len(y_test))
+    y_hat_no_trend = __model_no_trend.predict(len(y_test))
+
+    # Visualize the forecast data
+    # With trend
+    # Merge the y_test with the y_hat data
+    # replace zero values?
+    #df_y = y_test.replace(to_replace=0, method='ffill').copy()
+    df_y = y_test.copy()
+    df_y[y_test.sby_need.name + "_pred"] = y_hat.values
+    own_logger.info("########## Visualize the forcast data Model 1: With trend ##########")
+    # Create dict to define which data should be visualized as layers
+    dict_figures = {
+        "label": df_y.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
+    }
+    figure_1_a = figure_time_series_data_as_layers("ExponentialSmoothing with Trend", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
+    # Without trend
+    # Merge the y_test with the y_hat_no_trend data
+    df_y = y_test.copy()
+    df_y[y_test.sby_need.name + "_pred"] = y_hat_no_trend.values
+    own_logger.info("########## Visualize the forcast data Model 1: Without trend ##########")
+    # Create dict to define which data should be visualized as layers
+    dict_figures = {
+        "label": df_y.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
+    }
+    figure_1_b = figure_time_series_data_as_layers("ExponentialSmoothing without Trend", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
+
+    # Metrics for Evaluation: Model without Trend
+    MSE, MAE, RMSE, MAPE, R2 = __model_no_trend.evaluate(y_test.iloc[:,1:], y_hat_no_trend)
+    own_logger.info("########## Evaluation Metrics of the Model 1 without Trend ##########")
+    own_logger.info("MSE = %f", MSE)
+    own_logger.info("MAE = %f", MAE)
+    own_logger.info("RMSE = %f", RMSE)
+    own_logger.info("MAPE = %f", MAPE)
+    own_logger.info("R2 = %f", R2)
+
+    # Model 2: auto_arima
+    own_logger.info("########## Model 2: Classic Statistical auto_arima (multivariate) ##########")
+    # Train the model
+    own_logger.info("########## Train the Model 1 ##########")
     __model = AutoArimaModel()
     # Exclude constant column
     __model.train(X_train.loc[:,X_train.columns!="n_sby"], y_train)
@@ -198,25 +319,36 @@ if __name__ == "__main__":
     df_test = X_test.loc[:,~X_test.columns.isin(["date", "n_sby"])]
     df_test[y_test.sby_need.name] = y_test.loc[:,y_test.sby_need.name]
     # Forecast
-    own_logger.info("########## Forecasting ##########")
+    own_logger.info("########## Forecasting model 2 ##########")
     y_hat, conf_interval = __model.predict(len(df_test), X_test.loc[:,~X_test.columns.isin(["date", "n_sby"])])
 
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
     df_y[y_test.sby_need.name + "_pred"] = y_hat
-    own_logger.info("########## Visualize the forcast data ##########")
+    own_logger.info("########## Visualize the forcast data Model 2 ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
         "label": df_y.columns.values[1:],   # Skip the first column which includes the date (represents the x-axis)
     }
-    plot_time_series_data_as_layers("model_benchmark.html", "Model Benchmark", "AutoArimaModel", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
+    figure_2 = figure_time_series_data_as_layers("AutoArimaModel", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
     MSE, MAE, RMSE, MAPE, R2 = __model.evaluate(y_test.iloc[:,1:], y_hat)
-    own_logger.info("########## Evaluation Metrics of the Model: ##########")
+    own_logger.info("########## Evaluation Metrics of the Model 2: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
+
+    # Create the plot with the created figures
+    file_name = "model_benchmark.html"
+    file_title = "Model Benchmark"
+    own_logger.info("Plot times series data with title %s as multiple figures to file %s", file_title, file_name)
+    plot = PlotMultipleFigures(os.path.join("output",file_name), file_title)
+    plot.appendFigure(figure_1_a)
+    plot.appendFigure(figure_1_b)
+    plot.appendFigure(figure_2)
+    # Show the plot in responsive layout, but only stretch the width
+    plot.showPlotResponsive('stretch_width')
