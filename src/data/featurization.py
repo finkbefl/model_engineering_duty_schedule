@@ -44,7 +44,7 @@ def data_feature_selection(df):
     # Drop columns which not provide information over time (constant value, so only one distinct element)
     df.drop(columns=num_vals_cols.loc[num_vals_cols == 1].index, inplace=True)
 
-    __own_logger.info("First Trial: Select all prepared columns: %s", df.columns)
+    __own_logger.info("First Trial: Select all prepared columns, but exclude variables that contain constant values: %s", df.columns)
     # TODO Are all input variables significant regarding the target variable?
     df_featurized = df.copy()
 
