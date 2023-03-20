@@ -57,8 +57,8 @@ def plot_time_series_data_as_layers(file_name, file_title, figure_title, y_label
         own_logger.info("Plot times series data with title %s as multiple layers to file %s", file_title, file_name)
         figure_plot = PlotMultipleLayers(figure_title, "date", y_label, x_axis_type='datetime', file_name=os.path.join("output",file_name), file_title=file_title)
         for (index, layer) in enumerate(y_layers):
-            own_logger.info("Add CircleLayer for %s", layer)
-            figure_plot.addCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
+            own_logger.info("Add Layer for %s", layer)
+            figure_plot.addLineCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
         # Show the plot in responsive layout, but only stretch the width
         figure_plot.showPlotResponsive('stretch_width')
     except TypeError as error:

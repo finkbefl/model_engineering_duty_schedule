@@ -60,8 +60,8 @@ def figure_time_series_data_as_layers(figure_title, y_label, x_data, y_layers, y
         own_logger.info("Figure for times series data as multiple layers with title %s", figure_title)
         figure = PlotMultipleLayers(figure_title, "date", y_label, x_axis_type='datetime')
         for (index, layer) in enumerate(y_layers):
-            own_logger.info("Add CircleLayer for %s", layer)
-            figure.addCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
+            own_logger.info("Add Layer for %s", layer)
+            figure.addLineCircleLayer(layer, x_data, y_datas[y_datas.columns[index]])
         return figure.getFigure()
     except TypeError as error:
         own_logger.error("########## Error when trying to create figure ##########", exc_info=error)

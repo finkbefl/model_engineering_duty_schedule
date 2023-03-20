@@ -116,7 +116,7 @@ def plot_time_series_data(file_name, file_title, figure_titles, x_data, y_labels
         for (index, label) in enumerate(y_labels):
             __own_logger.info("Add figure for %s", label)
             figure = PlotMultipleLayers(figure_titles[index], "date", y_labels[index], x_axis_type='datetime')
-            figure.addCircleLayer(y_labels[index], x_data, y_datas[y_datas.columns[index]])
+            figure.addLineCircleLayer(y_labels[index], x_data, y_datas[y_datas.columns[index]])
             plot.appendFigure(figure.getFigure())
         # Show the plot in responsive layout, but only stretch the width
         plot.showPlotResponsive('stretch_width')
