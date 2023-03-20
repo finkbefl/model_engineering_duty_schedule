@@ -9,6 +9,7 @@ from pathlib import Path
 from statsforecast.models import SeasonalNaive
 # For evaluation metrics
 from sklearn import metrics
+from sktime.performance_metrics.forecasting import mean_absolute_scaled_error
 # For various calculations
 import numpy as np
 
@@ -150,8 +151,11 @@ class SeasonalNaiveModel():
         #R2
         R2 = metrics.r2_score(y_true, y_pred)
         own_logger.info("R2 = %f", R2)
+        # MASE
+        MASE = mean_absolute_scaled_error(y_true, y_pred, y_train=y_train.iloc[:,1:], sp=365)
+        own_logger.info("MASE = %f", MASE)
 
-        return MSE, MAE, RMSE, MAPE, R2
+        return MSE, MAE, RMSE, MAPE, R2, MASE
 
 #########################################################
 #########################################################
@@ -198,10 +202,11 @@ if __name__ == "__main__":
     plot_time_series_data_as_layers("baseline_model.html", "Baseline Model", "Forecast vs. Testdata", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2 = __baseline_model.evaluate(y_test.iloc[:,1:], y_hat)
+    MSE, MAE, RMSE, MAPE, R2, MASE = __baseline_model.evaluate(y_test.iloc[:,1:], y_hat)
     own_logger.info("########## Evaluation Metrics of the Baseline Model: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
+    own_logger.info("MASE = %f", MASE)

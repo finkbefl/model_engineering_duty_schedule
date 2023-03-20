@@ -16,6 +16,7 @@ from sktime.forecasting.all import ForecastingHorizon, EnsembleForecaster
 from sktime.forecasting.compose import make_reduction
 # For evaluation metrics
 from sklearn import metrics
+from sktime.performance_metrics.forecasting import mean_absolute_scaled_error
 # For various calculations
 import numpy as np
 
@@ -109,8 +110,11 @@ class Model():
         #R2
         R2 = metrics.r2_score(y_true, y_pred)
         own_logger.info("R2 = %f", R2)
+        # MASE
+        MASE = mean_absolute_scaled_error(y_true, y_pred, y_train=y_train.iloc[:,1:], sp=365)
+        own_logger.info("MASE = %f", MASE)
 
-        return MSE, MAE, RMSE, MAPE, R2
+        return MSE, MAE, RMSE, MAPE, R2, MASE
 
 #########################################################
 
@@ -371,13 +375,14 @@ if __name__ == "__main__":
     figure_1_b = figure_time_series_data_as_layers("ExponentialSmoothing without Trend", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation: Model without Trend
-    MSE, MAE, RMSE, MAPE, R2 = __model_no_trend.evaluate(y_test.iloc[:,1:], y_hat_no_trend)
+    MSE, MAE, RMSE, MAPE, R2, MASE = __model_no_trend.evaluate(y_test.iloc[:,1:], y_hat_no_trend)
     own_logger.info("########## Evaluation Metrics of the Model 1 without Trend ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
+    own_logger.info("MASE = %f", MASE)
 
     # Model 2: auto_arima
     own_logger.info("########## Model 2: Classic Statistical auto_arima (multivariate) ##########")
@@ -409,13 +414,14 @@ if __name__ == "__main__":
     figure_2 = figure_time_series_data_as_layers("AutoArimaModel", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2 = __model.evaluate(y_test.iloc[:,1:], y_hat)
+    MSE, MAE, RMSE, MAPE, R2, MASE = __model.evaluate(y_test.iloc[:,1:], y_hat)
     own_logger.info("########## Evaluation Metrics of the Model 2: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
+    own_logger.info("MASE = %f", MASE)
 
     # Model 3: LinearRegression (Supervised ML Model)
     own_logger.info("########## Model 3: Supervised ML model: LinearRegression (multivariate) ##########")
@@ -441,13 +447,14 @@ if __name__ == "__main__":
     figure_3 = figure_time_series_data_as_layers("LinearRegression", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2 = __model.evaluate(y_test.iloc[:,1:], y_hat)
+    MSE, MAE, RMSE, MAPE, R2, MASE = __model.evaluate(y_test.iloc[:,1:], y_hat)
     own_logger.info("########## Evaluation Metrics of the Model 3: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
+    own_logger.info("MASE = %f", MASE)
 
     # Create the plot with the created figures
     file_name = "model_benchmark.html"
