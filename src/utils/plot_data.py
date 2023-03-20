@@ -67,6 +67,8 @@ class PlotMultipleLayers(PlotBokeh):
     Methods
         addCircleLayer(legend_label, x_data, y_data):
             Add a circle layer to the figure with the given data
+        addLineCircleLayer(legend_label, x_data, y_data):
+            Add a circle and line layer to the figure with the given data
         addVBarLayer(legend_label, x_data, y_data):
             Add a vertical bar layer to the figure with the given data
         add_green_box(top_val):
@@ -93,6 +95,32 @@ class PlotMultipleLayers(PlotBokeh):
         checkParameterString(y_label)
         self.__own_figure = figure(title=figure_title, x_axis_type=x_axis_type, x_axis_label=x_label, y_axis_label=y_label)
         self.__own_logger.info("Bokeh plot for multiple layers initialized for figure %s", figure_title)
+
+    def addLineCircleLayer(self, legend_label, x_data, y_data):
+        """
+        Add a layer to the figure (line and circle representation)
+        ----------
+        Parameters:
+            legend_label : str
+                The legend label of the layer
+            x_data : Series
+                The x data to plot
+            y_data : Series
+                The y data to plot
+        ----------
+        Returns:
+            no returns
+        """
+        # check the parameter
+        checkParameterString(legend_label)
+        checkParameter(x_data, Series)
+        checkParameter(y_data, Series)
+        # Assign the next color automatically from the color iterator
+        color = next(self.__color_iter)
+        # add the plots to the figure
+        self.__own_figure.line(x=x_data, y=y_data, legend_label=legend_label, color=color)
+        self.__own_figure.circle(x=x_data, y=y_data, legend_label=legend_label, color=color)
+        self.__own_logger.info("Added  line/circle layer %s", legend_label)
 
     def addCircleLayer(self, legend_label, x_data, y_data):
         """

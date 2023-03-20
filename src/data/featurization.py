@@ -37,10 +37,16 @@ def data_feature_selection(df):
         The featurized data as DataFrame
     """
 
-    # Using all prepared columns in a first trial
-    __own_logger.info("First Trial: Select all prepared columns: %s", df.columns)
+    # Using all prepared columns in a first trial, but exclude variables that contain constant values and thus do not provide information over time
+    # Discover columns that contain only a few different values
+    num_vals_cols = df.nunique()
+    __own_logger.info("Number of different values in each column: %s", num_vals_cols)
+    # Drop columns which not provide information over time (constant value, so only one distinct element)
+    df.drop(columns=num_vals_cols.loc[num_vals_cols == 1].index, inplace=True)
+
+    __own_logger.info("First Trial: Select all prepared columns, but exclude variables that contain constant values: %s", df.columns)
     # TODO Are all input variables significant regarding the target variable?
-    df_featurized = df_prepared.copy()
+    df_featurized = df.copy()
 
     return df_featurized
 
@@ -110,7 +116,7 @@ def plot_time_series_data(file_name, file_title, figure_titles, x_data, y_labels
         for (index, label) in enumerate(y_labels):
             __own_logger.info("Add figure for %s", label)
             figure = PlotMultipleLayers(figure_titles[index], "date", y_labels[index], x_axis_type='datetime')
-            figure.addCircleLayer(y_labels[index], x_data, y_datas[y_datas.columns[index]])
+            figure.addLineCircleLayer(y_labels[index], x_data, y_datas[y_datas.columns[index]])
             plot.appendFigure(figure.getFigure())
         # Show the plot in responsive layout, but only stretch the width
         plot.showPlotResponsive('stretch_width')
@@ -158,7 +164,6 @@ if __name__ == "__main__":
         "title": ["Number of emergency drivers who have registered a sick call", 
                   "Number of emergency calls",
                   "Number of emergency drivers on duty",
-                  "Number of available substitute drivers",
                   "Number of substitute drivers to be activated"]
     }
     plot_time_series_data("train_data.html", "Train Data", dict_figures.get('title'), df_train.date, df_train[dict_figures.get('label')].columns.values, df_train[dict_figures.get('label')])
@@ -174,7 +179,6 @@ if __name__ == "__main__":
         "title": ["Number of emergency drivers who have registered a sick call", 
                   "Number of emergency calls",
                   "Number of emergency drivers on duty",
-                  "Number of available substitute drivers",
                   "Number of substitute drivers to be activated"]
     }
     plot_time_series_data("test_data.html", "Test Data", dict_figures.get('title'), df_test.date, df_test[dict_figures.get('label')].columns.values, df_test[dict_figures.get('label')])
