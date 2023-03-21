@@ -5,6 +5,8 @@
 import sys
 import os
 from pathlib import Path
+# To handle pandas data frames
+import pandas as pd
 # For ExponentialSmoothing Forecasting
 from statsmodels.tsa.api import ExponentialSmoothing
 # For auto_arima model
@@ -347,8 +349,8 @@ if __name__ == "__main__":
     __model_no_trend.train(y_train, False)
     # Forecast
     own_logger.info("########## Forecasting Model 1 ##########")
-    y_hat = __model.predict(len(y_test))
-    y_hat_no_trend = __model_no_trend.predict(len(y_test))
+    y_hat_1a = __model.predict(len(y_test))
+    y_hat_1b = __model_no_trend.predict(len(y_test))
 
     # Visualize the forecast data
     # With trend
@@ -356,7 +358,7 @@ if __name__ == "__main__":
     # replace zero values?
     #df_y = y_test.replace(to_replace=0, method='ffill').copy()
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat.values
+    df_y[y_test.sby_need.name + "_pred"] = y_hat_1a.values
     own_logger.info("########## Visualize the forcast data Model 1: With trend ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
@@ -366,7 +368,7 @@ if __name__ == "__main__":
     # Without trend
     # Merge the y_test with the y_hat_no_trend data
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat_no_trend.values
+    df_y[y_test.sby_need.name + "_pred"] = y_hat_1b.values
     own_logger.info("########## Visualize the forcast data Model 1: Without trend ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
@@ -375,14 +377,18 @@ if __name__ == "__main__":
     figure_1_b = figure_time_series_data_as_layers("ExponentialSmoothing without Trend", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation: Model without Trend
-    MSE, MAE, RMSE, MAPE, R2, MASE = __model_no_trend.evaluate(y_test.iloc[:,1:], y_hat_no_trend)
+    MSE, MAE, RMSE, MAPE, R2, MASE_1b = __model_no_trend.evaluate(y_test.iloc[:,1:], y_hat_1b)
     own_logger.info("########## Evaluation Metrics of the Model 1 without Trend ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
-    own_logger.info("MASE = %f", MASE)
+    own_logger.info("MASE = %f", MASE_1b)
+
+    # Store the results for benchmark
+    result_dict = {}
+    result_dict["ExponentialSmoothing"] = {"MASE": MASE_1b, "y_hat": y_hat_1b}
 
     # Model 2: auto_arima
     own_logger.info("########## Model 2: Classic Statistical auto_arima (multivariate) ##########")
@@ -400,12 +406,12 @@ if __name__ == "__main__":
     own_logger.info("########## Forecasting model 2 ##########")
     #y_hat, conf_interval = __model.predict(len(df_test), X_test.loc[:,~X_test.columns.isin(["date"])])
     # Second approach: Only use the target value and the high correlated variable "calls" (exegenous must be a 2D array)
-    y_hat, conf_interval = __model.predict(len(df_test), X_test.loc[:,X_test.calls.name].values.reshape((len(X_test.loc[:,X_test.calls.name]),1)))
+    y_hat_2, conf_interval = __model.predict(len(df_test), X_test.loc[:,X_test.calls.name].values.reshape((len(X_test.loc[:,X_test.calls.name]),1)))
 
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat
+    df_y[y_test.sby_need.name + "_pred"] = y_hat_2
     own_logger.info("########## Visualize the forcast data Model 2 ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
@@ -414,14 +420,17 @@ if __name__ == "__main__":
     figure_2 = figure_time_series_data_as_layers("AutoArimaModel", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2, MASE = __model.evaluate(y_test.iloc[:,1:], y_hat)
+    MSE, MAE, RMSE, MAPE, R2, MASE_2 = __model.evaluate(y_test.iloc[:,1:], y_hat_2)
     own_logger.info("########## Evaluation Metrics of the Model 2: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
-    own_logger.info("MASE = %f", MASE)
+    own_logger.info("MASE = %f", MASE_2)
+
+    # Store the results for benchmark
+    result_dict["auto_arima"] = {"MASE": MASE_2, "y_hat": y_hat_2}
 
     # Model 3: LinearRegression (Supervised ML Model)
     own_logger.info("########## Model 3: Supervised ML model: LinearRegression (multivariate) ##########")
@@ -433,12 +442,12 @@ if __name__ == "__main__":
 
     # Forecast
     own_logger.info("########## Forecasting model 3 ##########")
-    y_hat = __model.predict(X_test.loc[:,X_train.calls.name])
+    y_hat_3 = __model.predict(X_test.loc[:,X_train.calls.name])
 
     # Visualize the forecast data
     # Merge the y_test with the y_hat data
     df_y = y_test.copy()
-    df_y[y_test.sby_need.name + "_pred"] = y_hat
+    df_y[y_test.sby_need.name + "_pred"] = y_hat_3
     own_logger.info("########## Visualize the forcast data Model 3 ##########")
     # Create dict to define which data should be visualized as layers
     dict_figures = {
@@ -447,14 +456,17 @@ if __name__ == "__main__":
     figure_3 = figure_time_series_data_as_layers("LinearRegression", "sby_need", df_y.date, df_y[dict_figures.get('label')].columns.values, df_y[dict_figures.get('label')])
 
     # Metrics for Evaluation
-    MSE, MAE, RMSE, MAPE, R2, MASE = __model.evaluate(y_test.iloc[:,1:], y_hat)
+    MSE, MAE, RMSE, MAPE, R2, MASE_3 = __model.evaluate(y_test.iloc[:,1:], y_hat_3)
     own_logger.info("########## Evaluation Metrics of the Model 3: ##########")
     own_logger.info("MSE = %f", MSE)
     own_logger.info("MAE = %f", MAE)
     own_logger.info("RMSE = %f", RMSE)
     own_logger.info("MAPE = %f", MAPE)
     own_logger.info("R2 = %f", R2)
-    own_logger.info("MASE = %f", MASE)
+    own_logger.info("MASE = %f", MASE_3)
+
+    # Store the results for benchmark
+    result_dict["LinearRegression"] = {"MASE": MASE_3, "y_hat": y_hat_3}
 
     # Create the plot with the created figures
     file_name = "model_benchmark.html"
@@ -467,3 +479,18 @@ if __name__ == "__main__":
     plot.appendFigure(figure_3)
     # Show the plot in responsive layout, but only stretch the width
     plot.showPlotResponsive('stretch_width')
+
+    # Results
+    own_logger.info("Benchmark Result: %s", result_dict)
+    # Sort by MAE Value
+    sorted_result_dict = sorted(result_dict.items(), key=lambda model:model[1]['MASE'])
+    own_logger.info("Sorted Result: %s", result_dict)
+    # Choose Model with lowest MASE value
+    own_logger.info("Model with lowest MASE: %s (%f)", list(sorted_result_dict)[0][0], list(sorted_result_dict)[0][1]['MASE'])
+
+    # Save the prediction data to csv file
+    own_logger.info("########## Save the prediction data as time series ##########")
+    data = {y_test.date.name : y_test.date.values, 'y_pred': list(sorted_result_dict)[0][1]['y_hat']}
+    save_data(pd.DataFrame(data), "modeling", "y_pred.csv")
+
+
