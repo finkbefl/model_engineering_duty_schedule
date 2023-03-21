@@ -3,7 +3,34 @@ Model Engineering: Duty Schedule
 
 Case study on the development of a model to predict the duty schedule of an rescue service with python.
 
-## Functionalities
+- [Prerequisites](#prerequisites)
+- [Launch](#launch)
+- [Project Description](#project-description)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Running the Program](#running-the-program)
+  - [Data Preparation](#data-preparation)
+  - [Feature Selection and Data Split](#feature-selection-and-data-split)
+  - [Baseline Model](#baseline-model)
+  - [Model Benchmark](#model-benchmark)
+  - [Model Evaluation](#model-evaluation)
+- [Restrictions](#restrictions)
+- [License](#license)
+
+
+## Prerequisites
+
+TODO
+
+## Launch
+
+TODO
+
+## Project Description
+
+TODO
+
+## Project Structure
 
 TODO
 
@@ -40,6 +67,16 @@ python src/model/baseline_model.py
 ```bash
 python src/model/model_benchmark.py
 ```
+
+### Model Evaluation
+
+```bash
+python src/evaluation/model_evaluation.py
+```
+
+## Restrictions
+
+TODO
 
 ## License
 [MIT](LICENSE)
