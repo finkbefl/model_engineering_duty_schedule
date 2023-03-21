@@ -59,6 +59,8 @@ class PlotMultipleLayers(PlotBokeh):
             The label of the y axis
         x_axis_type : str
             The type of the x-axis
+        x_range : range
+            The range of the x-axis for categorical data
         file_name : str
             The file name (html) in which the figure is shown
         file_title : str
@@ -84,16 +86,16 @@ class PlotMultipleLayers(PlotBokeh):
     __own_logger = __own_logging.logger
 
     # Constructor Method
-    def __init__(self, figure_title, x_label, y_label, x_axis_type='auto', file_name=None, file_title=None):
+    def __init__(self, figure_title, x_label, y_label, x_axis_type='auto', x_range=None, file_name=None, file_title=None):
         # Call the Base Class Constructor
         PlotBokeh.__init__(self, file_name, file_title)
         # For color cycling (different colors for the different layers)
         self.__color_iter = Category10_10.__iter__()
         # create a figure, but first check the parameter
         checkParameterString(figure_title)
-        checkParameterString(x_label)
-        checkParameterString(y_label)
-        self.__own_figure = figure(title=figure_title, x_axis_type=x_axis_type, x_axis_label=x_label, y_axis_label=y_label)
+        #checkParameterString(x_label)
+        #checkParameterString(y_label)
+        self.__own_figure = figure(title=figure_title, x_axis_type=x_axis_type, x_range=x_range, x_axis_label=x_label, y_axis_label=y_label)
         self.__own_logger.info("Bokeh plot for multiple layers initialized for figure %s", figure_title)
 
     def addLineCircleLayer(self, legend_label, x_data, y_data):
@@ -145,13 +147,11 @@ class PlotMultipleLayers(PlotBokeh):
         self.__own_figure.circle(x=x_data, y=y_data, legend_label=legend_label, color=next(self.__color_iter))
         self.__own_logger.info("Added  circle layer %s", legend_label)
 
-    def addVBarLayer(self, legend_label, x_data, y_data):
+    def addVBarLayer(self, x_data, y_data):
         """
         Add a layer to the figure (vertical bar representation)
         ----------
         Parameters:
-            legend_label : str
-                The legend label of the layer
             x_data : numbers.Real
                 The x data to plot
             y_data : numbers.Real
@@ -161,12 +161,11 @@ class PlotMultipleLayers(PlotBokeh):
             no returns
         """
         # check the parameter
-        checkParameterString(legend_label)
-        checkParameter(x_data, Real)
-        checkParameter(y_data, Real)
-        # add a plot to the figure, assign the next color automatically from the color iterator
-        self.__own_figure.vbar(x = x_data, top = y_data, legend_label=legend_label, width=0.8, color=next(self.__color_iter))
-        self.__own_logger.info("Added vbar layer %s", legend_label)
+        #checkParameter(x_data, Real)
+        #checkParameter(y_data, Real)
+        # add a plot to the figure, assign every bar in another color with the known color sequence
+        self.__own_figure.vbar(x = x_data, top = y_data, width=0.8, color=Category10_10[0:len(x_data)])
+        self.__own_logger.info("Added vbar layer")
 
     def set_axis_range(self, x_min=None, x_max=None, y_min=None, y_max=None):
         """
