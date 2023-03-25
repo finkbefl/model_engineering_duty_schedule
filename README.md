@@ -26,6 +26,8 @@ TODO
 
 TODO
 
+Note: The data is not pushed into this repository, so a clone of the project is not runnable out of the box!
+
 ## Project Description
 
 TODO
