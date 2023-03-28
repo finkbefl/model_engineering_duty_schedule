@@ -1,0 +1,6 @@
+*.code-workspace
+**/__pycache__/*
+data/*
+logs/*
+output/*
+*.odt
