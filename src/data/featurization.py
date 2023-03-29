@@ -149,9 +149,9 @@ if __name__ == "__main__":
     # TODO: Using the stationary data?
     df_featurized = data_feature_selection(df_prepared)
 
-    # Split the data into train and test set: Testset should contain a whole seasonal period, e.g. 1 from 4 years, and seperate the target-value
+    # Split the data into train and test set: Testset should contain a whole seasonal period, e.g. 1 from 3 years, and seperate the target-value
     __own_logger.info("########## Split the data into train and test set ##########")
-    X_train, X_test, y_train, y_test = data_split(df_featurized, 1/4, "sby_need")
+    X_train, X_test, y_train, y_test = data_split(df_featurized, 1/3, "sby_need")
 
     # Visualize the train data
     # Merge the train-data for visualization
